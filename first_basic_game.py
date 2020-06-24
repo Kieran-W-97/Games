@@ -2,18 +2,25 @@ import pygame
 import random
 # import basic keystroke inputs that you want to use:
 from pygame.locals import (
-    K_UP,K_DOWN,K_LEFT,K_RIGHT,K_a,K_s,K_d,K_w,K_ESCAPE,KEYDOWN,KEYUP,QUIT,RLEACCEL
+    K_UP,K_DOWN,K_LEFT,K_RIGHT,K_a,K_s,K_d,K_w,K_ESCAPE,K_SPACE,KEYDOWN,KEYUP,QUIT,RLEACCEL,
 )
 FPS = 60
 if FPS == 60:
     s = 35
-    e_s = 20
+    e_s = 15
+"""
 elif FPS == 30:
     s = 60
     e_s = 20
+"""
+init_lives = 10
 # define screen dimensions:
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 1000
+# create counting variables:
+hit_count = 0
+fail_count = 0
+"""CLASSES AND FUNCTIONS"""
 # define the user clas (see: https://realpython.com/python-super/ for information on use of super() inheritance)
 class User(pygame.sprite.Sprite):
     def __init__(self):
@@ -40,6 +47,10 @@ class User(pygame.sprite.Sprite):
             self.rect.move_ip(-s, 0)
         if pressed_keys[K_d]:
             self.rect.move_ip(s, 0)
+        if pressed_keys[K_SPACE]:
+            bul = Bullet()
+            all_spr.add(bul)
+            bullet_spr.add(bul)
             # Keep player player on the screen by appearing out of opposite side...
         if self.rect.left < 0:
             self.rect.left = 0
@@ -67,6 +78,32 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.move_ip(-self.speed,0)
         if self.rect.right < 0:
             self.kill()
+            return 1
+# make a 'bullet' class:
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Bullet,self).__init__()
+        self.obj = pygame.image.load('Images/raindrop-clipart-rainfall.jpg').convert()
+        self.obj.set_colorkey((255,255,255))
+        self.obj = pygame.transform.scale(self.obj,(20,20))
+        self.rect = self.obj.get_rect(
+            center = (
+                usr.rect.right-20,
+                usr.rect.top+16
+            )
+        )
+        self.speed = 40
+    def update(self):
+        self.rect.move_ip(self.speed,0)
+        if self.rect.left > SCREEN_WIDTH:
+            self.kill()
+def lives(f_count):
+    n_lives = init_lives - fail_count
+    lives_font = pygame.font.SysFont(None,25)
+    lives_txt = lives_font.render('Lives: '+ str(n_lives),True,(0,0,0))
+    screen.blit(lives_txt,(1300,900))
+    return n_lives
+"""GAME VARIABLES AND INITIALISE"""
 # create a clock to manage FPS:
 clock = pygame.time.Clock()
 # have to initialise pygame to get the library running:
@@ -81,9 +118,11 @@ pygame.time.set_timer(ADDENEMY,250)
 # create two Sprite groups: one for all sprites, one for just the enemies.
 all_spr = pygame.sprite.Group()
 enemy_spr = pygame.sprite.Group()
+bullet_spr = pygame.sprite.Group()
 all_spr.add(usr)
 # get the game loop running and create the code to enable the user to quit the game. In this case the 'esc' key.
 pygame.display.flip()
+"""GAME LOOP"""
 running = True
 while running == True:
     # loop through the elements in the event queue:
@@ -100,16 +139,28 @@ while running == True:
             enemy_spr.add(enemy)
             all_spr.add(enemy)
     screen.fill((255,255,255))
+    number_lives = lives(fail_count)
+    if number_lives <= 0:
+        running = False
+    #screen.fill((0,0,0))
     #update user movement:
     pressed_keys = pygame.key.get_pressed()
     usr.update(pressed_keys)
     # update enemy movements:
     for sprite in enemy_spr:
+        s_up = sprite.update()
+        if s_up == 1:
+            fail_count += 1
+    # update bullet movements:
+    for sprite in bullet_spr:
         sprite.update()
     # update the display with all sprite movements:
     for sprite in all_spr:
         screen.blit(sprite.obj,sprite.rect)
     pygame.display.flip()
+    for bul in bullet_spr:
+        if pygame.sprite.spritecollide(bul,enemy_spr,dokill = True):
+            hit_count += 1
     if pygame.sprite.spritecollideany(usr,enemy_spr):
         usr.kill()
         running = False
