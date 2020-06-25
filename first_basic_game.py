@@ -13,7 +13,8 @@ elif FPS == 30:
     s = 60
     e_s = 20
 """
-init_lives = 10
+init_lives = 3
+init_viral_load = 100
 # define screen dimensions:
 SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 1000
@@ -97,12 +98,18 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.move_ip(self.speed,0)
         if self.rect.left > SCREEN_WIDTH:
             self.kill()
-def lives(f_count):
-    n_lives = init_lives - fail_count
+def lives(N,h_count):
+    n = N - h_count
     lives_font = pygame.font.SysFont(None,25)
-    lives_txt = lives_font.render('Lives: '+ str(n_lives),True,(0,0,0))
+    lives_txt = lives_font.render('Lives: '+ str(n),True,(0,0,0))
     screen.blit(lives_txt,(1300,900))
-    return n_lives
+    return n
+def v_load(N,f_count):
+    n = N - f_count
+    lives_font = pygame.font.SysFont(None, 25)
+    lives_txt = lives_font.render('Viral Load: ' + str(n), True, (0, 0, 0))
+    screen.blit(lives_txt, (100, 900))
+    return n
 """GAME VARIABLES AND INITIALISE"""
 # create a clock to manage FPS:
 clock = pygame.time.Clock()
@@ -139,8 +146,11 @@ while running == True:
             enemy_spr.add(enemy)
             all_spr.add(enemy)
     screen.fill((255,255,255))
-    number_lives = lives(fail_count)
+    number_lives = lives(init_lives,hit_count)
     if number_lives <= 0:
+        running = False
+    viral_load = v_load(init_viral_load,fail_count)
+    if viral_load <= 0:
         running = False
     #screen.fill((0,0,0))
     #update user movement:
@@ -159,11 +169,11 @@ while running == True:
         screen.blit(sprite.obj,sprite.rect)
     pygame.display.flip()
     for bul in bullet_spr:
-        if pygame.sprite.spritecollide(bul,enemy_spr,dokill = True):
-            hit_count += 1
-    if pygame.sprite.spritecollideany(usr,enemy_spr):
-        usr.kill()
-        running = False
+        pygame.sprite.spritecollide(bul,enemy_spr,dokill = True)
+    collided_enemy = pygame.sprite.spritecollideany(usr,enemy_spr)
+    if collided_enemy != None:
+        collided_enemy.kill()
+        hit_count += 1
     clock.tick(FPS)
 # quit pygame and the python application:
 pygame.quit()
