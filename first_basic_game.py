@@ -21,6 +21,7 @@ SCREEN_HEIGHT = 1000
 # create counting variables:
 hit_count = 0
 fail_count = 0
+kill_count = 0 # will use for levels initially.
 """CLASSES AND FUNCTIONS"""
 # define the user clas (see: https://realpython.com/python-super/ for information on use of super() inheritance)
 class User(pygame.sprite.Sprite):
@@ -102,14 +103,19 @@ def lives(N,h_count):
     n = N - h_count
     lives_font = pygame.font.SysFont(None,25)
     lives_txt = lives_font.render('Lives: '+ str(n),True,(0,0,0))
-    screen.blit(lives_txt,(1300,900))
+    screen.blit(lives_txt,(1300,50))
     return n
 def v_load(N,f_count):
     n = N - f_count
     lives_font = pygame.font.SysFont(None, 25)
     lives_txt = lives_font.render('Viral Load: ' + str(n), True, (0, 0, 0))
-    screen.blit(lives_txt, (100, 900))
+    screen.blit(lives_txt, (100, 50))
     return n
+def level_bar(k_count):
+    l = k_count//50
+    level_font = pygame.font.SysFont(None,25)
+    level_txt = level_font.render('Level: ' + str(l),True, (0,0,0))
+    screen.blit(level_txt,(800,50))
 """GAME VARIABLES AND INITIALISE"""
 # create a clock to manage FPS:
 clock = pygame.time.Clock()
@@ -132,6 +138,7 @@ pygame.display.flip()
 """GAME LOOP"""
 running = True
 while running == True:
+    """game variables"""
     # loop through the elements in the event queue:
     for event in pygame.event.get():
         # did the user press a key? act on this first...
@@ -152,7 +159,9 @@ while running == True:
     viral_load = v_load(init_viral_load,fail_count)
     if viral_load <= 0:
         running = False
-    #screen.fill((0,0,0))
+    """levels"""
+    current_level = level_bar(kill_count)
+    """usr variables"""
     #update user movement:
     pressed_keys = pygame.key.get_pressed()
     usr.update(pressed_keys)
@@ -168,8 +177,9 @@ while running == True:
     for sprite in all_spr:
         screen.blit(sprite.obj,sprite.rect)
     pygame.display.flip()
-    for bul in bullet_spr:
-        pygame.sprite.spritecollide(bul,enemy_spr,dokill = True)
+    # check collisions (always after screen update)
+    killed_enemies = pygame.sprite.groupcollide(enemy_spr,bullet_spr,dokilla=True,dokillb=True) #returns dict where enemy sprites are keys.
+    kill_count += len(killed_enemies)
     collided_enemy = pygame.sprite.spritecollideany(usr,enemy_spr)
     if collided_enemy != None:
         collided_enemy.kill()
